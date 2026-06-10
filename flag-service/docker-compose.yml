@@ -1,0 +1,45 @@
+
+# versao do Compose, essa 3.9 é uma versao nova que atende os recursos que precisamos
+# para rodar os containers
+version: "3.9"
+
+# lista dos containers que vão rodar.
+# services é uma lista de aplicações/serviços que o Compose vai orquestrar.
+# Cada item dentro de services representa um container (ou conjunto de containers) com sua configuração.
+services:
+  db: #  roda o PostgreSQL.
+    image: postgres:15 # ← imagem oficial baixada do Docker Hub
+    container_name: flags_db #  → nome real do container que roda o banco.
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: flags_db
+    # Quando o container sobe, ele cria um banco chamado flags_db dentro do Postgres.
+    # O formato de direcionamento de porta do host:container
+    # Quando você acessa localhost:5432 na sua máquina, o Docker redireciona para a porta 5432 do container.     
+    ports:
+      - "5432:5432"
+    # Esse comando volumes mapeia um arquivo da sua máquina para dentro do container, isso faz com os arquivos do banco se mantenha mesmo parando o container
+    # O Postgres executa automaticamente esse script init.sql, criando a tabela api_keys dentro do banco.
+    volumes:
+      - pgdata_flags:/var/lib/postgresql/data
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql
+
+# No serviço flag-service você está dizendo ao Compose para construir a imagem da sua aplicação usando o Dockerfile que está na pasta atual
+  flag-service: # → roda aplicação que depende do banco.
+    build: . # pegue o Dockerfile que está no diretório atual (.) e construa uma imagem a partir dele
+    container_name: flag_service #  → nome real do container que roda a aplicação.
+    ports:
+      - "8002:8002"
+    environment:
+        - DATABASE_URL=postgres://postgres:postgres@db:5432/flags_db
+        - PORT=8002
+        - AUTH_SERVICE_URL="http://localhost:8001"
+        # depends instruir o docker-compose a garantir que o serviço db (o Postgres) seja iniciado antes do serviço flag-service
+    depends_on:
+      - db
+
+# declara volumes nomeados no Docker Compose.
+# Isso significa que o diretório /var/lib/postgresql/data (onde o Postgres guarda os dados) será persistido em um volume chamado pgdata_flags.      
+volumes:
+  pgdata_flags:

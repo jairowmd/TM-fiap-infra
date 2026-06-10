@@ -1,0 +1,51 @@
+# iniciar construção
+
+# versao do Compose, essa 3.9 é uma versao nova que atende os recursos que precisamos
+# para rodar os containers
+version: "3.9"
+
+
+# lista dos containers que vão rodar.
+# services é uma lista de aplicações/serviços que o Compose vai orquestrar.
+# Cada item dentro de services representa um container (ou conjunto de containers) com sua configuração.
+services:
+#  o db dentro do services: funciona como uma label (um identificador lógico) 
+#  dentro do docker-compose.yml
+  db:  # ← label do serviço
+    image : postgres:15 # ← imagem oficial baixada do Docker Hub
+    # container_name: auth_db → nome real do container que roda o banco.
+    container_name: auth_db
+    environment :
+        POSTGRES_USER: postgres
+        POSTGRES_PASSWORD: postgres
+        # Quando o container sobe, ele cria um banco chamado auth_db dentro do Postgres.
+        POSTGRES_DB: auth_db  #  → cria automaticamente um banco com esse nome e dá acesso ao usuário.
+    # O formato de direcionamento de porta do host:container
+    # Quando você acessa localhost:5432 na sua máquina, o Docker redireciona para a porta 5432 do container.     
+    ports:
+      - "5432:5432"
+    # Esse comando mapeia um arquivo da sua máquina para dentro do container.
+    # O Postgres executa automaticamente esse script, criando a tabela api_keys dentro do banco auth_db.
+    volumes:
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql
+  
+  # ista dos containers que vão rodar nesse caso o que fiz no Dockerfile
+  auth-service:
+    # no caso ele vai na pasta local e rodar o build do dockerfile
+    build: .
+    container_name: auth-service # ← nome do container
+    # denpends instruir o docker-compose a garantir que o serviço db (o Postgres) seja iniciado antes do serviço auth-service.
+    depends_on :
+        - db
+    # variaveis de ambiente solicitadas para execucao do codigo  
+    environment :
+        DATABASE_URL: "postgres://postgres:postgres@db:5432/auth_db?sslmode=disable"
+        PORT: "8001"
+        MASTER_KEY: "admin-secreto-123"
+    ports :
+     - "8001:8001"
+
+
+
+
+
