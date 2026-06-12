@@ -23,11 +23,27 @@ services:
     # O formato de direcionamento de porta do host:container
     # Quando você acessa localhost:5432 na sua máquina, o Docker redireciona para a porta 5432 do container.     
     ports:
-      - "5432:5432"
+      - "5433:5432"
     # Esse comando mapeia um arquivo da sua máquina para dentro do container.
     # O Postgres executa automaticamente esse script, criando a tabela api_keys dentro do banco auth_db.
     volumes:
       - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql
+# Bloco healthcheck que define como o Docker vai verificar se o container está saudável (ou seja, realmente pronto para uso).
+    healthcheck:
+    # test é o comando que será executado dentro do container para checar o estado.
+    # Aqui usamos pg_isready, uma ferramenta nativa do Postgres que responde se o servidor está aceitando conexões.
+    # -U postgres indica o usuário que será usado para testar a conexão.
+    # CMD-SHELL significa que o comando será rodado como se fosse no shell do container.
+        test: ["CMD-SHELL", "pg_isready -U postgres"]
+        # interval: 10s  Define o intervalo entre cada tentativa de checagem. Neste caso, a cada 10 segundos o Docker vai rodar o pg_isready.
+        interval: 10s
+        # Tempo máximo que o Docker espera pela resposta do comando. Se passar de 5 segundos sem resposta, considera que falhou.
+        timeout: 5s
+        # retries: 5  Quantas vezes o Docker vai tentar antes de marcar o container como “unhealthy”. Aqui, até 5 falhas consecutivas são toleradas.
+        retries: 5
+    # configurado a rede de comunicação entre os serviços
+    networks:
+      - shared_net
   
   # ista dos containers que vão rodar nesse caso o que fiz no Dockerfile
   auth-service:
@@ -36,7 +52,9 @@ services:
     container_name: auth-service # ← nome do container
     # denpends instruir o docker-compose a garantir que o serviço db (o Postgres) seja iniciado antes do serviço auth-service.
     depends_on :
-        - db
+          db:
+          # O Postgres sobe, passa pelo healthcheck. Só quando estiver saudável o auth-service é iniciado.
+            condition: service_healthy
     # variaveis de ambiente solicitadas para execucao do codigo  
     environment :
         DATABASE_URL: "postgres://postgres:postgres@db:5432/auth_db?sslmode=disable"
@@ -44,8 +62,13 @@ services:
         MASTER_KEY: "admin-secreto-123"
     ports :
      - "8001:8001"
-
-
+    # configurado a rede de comunicação entre os serviços
+    networks:
+      - shared_net
+# configurado a rede de comunicação entre os serviços
+networks:
+  shared_net:
+    external: true
 
 
 
