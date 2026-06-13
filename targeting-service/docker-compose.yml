@@ -1,0 +1,46 @@
+# compose muito parecido com o do flag-service
+version: "3.9"
+
+services:
+  db:
+    image: postgres:15
+    container_name: targeting_db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: targeting_db    
+    ports:
+      - "5434:5432"
+    volumes:
+      - pgdata_targeting:/var/lib/postgresql/data
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql
+    # configurado a rede de comunicação entre os serviços
+    networks:
+      - shared_net
+
+  targeting-service: # → roda aplicação que depende do banco.
+    build: .
+    container_name: targeting_service
+    ports:
+      - "8003:8003"
+    environment:
+        DATABASE_URL: postgres://postgres:postgres@db:5432/targeting_db
+        PORT: 8003
+        AUTH_SERVICE_URL: http://auth-service:8001
+
+    # configurado a rede de comunicação entre os serviços
+    networks:
+      - shared_net
+
+    depends_on:
+      - db
+
+# declara volumes nomeados no Docker Compose.
+# Isso significa que o diretório /var/lib/postgresql/data (onde o Postgres guarda os dados) será persistido em um volume chamado pgdata_flags.      
+volumes:
+  pgdata_targeting:
+
+# configurado a rede de comunicação entre os serviços
+networks:
+  shared_net:
+    external: true      
