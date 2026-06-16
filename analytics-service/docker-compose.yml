@@ -11,7 +11,7 @@ services:
   analytics-service:  # ← label do serviço
     build: .
     # container_name:  → nome real do container que roda o banco.
-    container_name: aanalytics-service
+    container_name: analytics-service
     ports:
       - "8005:8005"
     env_file:
@@ -20,7 +20,6 @@ services:
             # Variáveis obrigatórias para AWS
       AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
       AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
-      AWS_SESSION_TOKEN: ${AWS_SESSION_TOKEN}
       AWS_SQS_URL: ${AWS_SQS_URL}
       AWS_DYNAMODB_TABLE: ${AWS_DYNAMODB_TABLE}
       AWS_REGION: ${AWS_REGION}

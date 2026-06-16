@@ -23,8 +23,8 @@ services:
             # Você deve criar uma chave de API para ele usando o auth-service (com a MASTER_KEY).
             SERVICE_API_KEY: "tm_key_81f194ff85e6b1584a3f3d208e1ac763759d814060b5987c4dfb5832da4550ac"
             # Url do sqs criado na aws 
-            AWS_SQS_URL: "https://sqs.us-east-1.amazonaws.com/106183805249/evaluation-queue"
-            AWS_REGION: "us-east-1"
+            AWS_SQS_URL: "https://sqs.us-east-2.amazonaws.com/040066346156/analytics-events-queue"
+            AWS_REGION: "us-east-2"
         # configurado a rede de comunicação entre os serviços
         networks:
          - shared_net
