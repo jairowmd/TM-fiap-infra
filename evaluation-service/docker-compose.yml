@@ -1,0 +1,46 @@
+# versao do Compose, essa 3.9 é uma versao nova que atende os recursos que precisamos
+# para rodar os containers
+version: "3.9"
+
+# lista dos containers que vão rodar.
+# services é uma lista de aplicações/serviços que o Compose vai orquestrar.
+# Cada item dentro de services representa um container (ou conjunto de containers) com sua configuração.
+services: 
+    evaluation-services: # ← label do serviço
+        build: .     # no caso ele vai na pasta local e rodar o build do dockerfile
+        container_name: evaluation-services
+        ports:
+          - "8004:8004"
+        environment: # <- variaveis solicitadas no codigo
+            REDIS_HOST: "redis"
+            REDIS_PORT: "6379"
+            PORT: "8004"
+            REDIS_URL: "redis://redis:6379"
+            FLAG_SERVICE_URL: "http://flag-service:8002"
+            TARGETING_SERVICE_URL: "http://localhost:8003"
+            # 2 - Crie uma Chave de API de Serviço
+            # Este serviço precisa se autenticar no flag-service e no targeting-service. 
+            # Você deve criar uma chave de API para ele usando o auth-service (com a MASTER_KEY).
+            SERVICE_API_KEY: "tm_key_81f194ff85e6b1584a3f3d208e1ac763759d814060b5987c4dfb5832da4550ac"
+            # Url do sqs criado na aws 
+            AWS_SQS_URL: "https://sqs.us-east-1.amazonaws.com/106183805249/evaluation-queue"
+            AWS_REGION: "us-east-1"
+        # configurado a rede de comunicação entre os serviços
+        networks:
+         - shared_net
+        depends_on:
+            - redis
+ 
+
+    redis: 
+        image: redis:7 # <- imagem do banco de dados solicitado no codigo
+        container_name: redis
+        ports:
+          - "6379:6379"
+        networks:
+          - shared_net
+
+# configurado a rede de comunicação entre os serviços
+networks:
+  shared_net:
+    external: true

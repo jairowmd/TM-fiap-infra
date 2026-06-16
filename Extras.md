@@ -20,6 +20,11 @@ Toda vez que você reinicia o PC, os containers que estavam rodando não sobem a
 - docker logs + container (auth-service) - para verificar log de erros
 - docker-compose down - derrubar  containers do compose
 
+reconstrua a imagem:
+
+docker-compose build
+docker-compose up -d
+
 
 Criei a rede shared_net para os hosts se comunicarem
 - docker network create shared_net  
