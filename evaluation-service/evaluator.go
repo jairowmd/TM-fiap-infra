@@ -1,7 +1,9 @@
 package main
 
+// retirardo pacote context por erro - jairo
+
 import (
-	"context"
+
 	"crypto/sha1"
 	"encoding/binary"
 	"encoding/json"
@@ -11,6 +13,7 @@ import (
 	"net/http"
 	"sync"
 	"time"
+	"os"  // colocado pacote para dependencias faltantes por jairo
 )
 
 const (
