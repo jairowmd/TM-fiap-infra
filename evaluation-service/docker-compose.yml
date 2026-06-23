@@ -25,6 +25,9 @@ services:
             # Url do sqs criado na aws 
             AWS_SQS_URL: "https://sqs.us-east-2.amazonaws.com/040066346156/analytics-events-queue"
             AWS_REGION: "us-east-2"
+            AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+            AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+            
         # configurado a rede de comunicação entre os serviços
         networks:
          - shared_net

@@ -1,0 +1,157 @@
+# Docker compose centralizado para todos os micro serviços
+# versao do Compose, essa 3.9 é uma versao nova que atende os recursos que precisamos
+# para rodar os containers
+version: "3.9"
+
+services:
+
+  # =========================
+  # DATABASES
+  # =========================
+
+  # Logica dos comentarios do auth-db segue a mesma para os demais bancos
+
+  auth-db: # ← label do serviço
+    image: postgres:15  # ← imagem oficial baixada do Docker Hub
+    container_name: auth-db # container_name: nome real do container que roda o banco.
+     # Quando o container sobe, ele cria um banco chamado auth_db dentro do Postgres.v
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: auth_db
+    ports:
+    # Esse comando mapeia um arquivo da sua máquina para dentro do container.
+    # O Postgres executa automaticamente esse script, criando a tabela api_keys dentro do banco auth_db.
+      - "5433:5432" # O formato de direcionamento de porta do host:container
+    volumes:
+      - auth_db_data:/var/lib/postgresql/data
+    # Bloco healthcheck que define como o Docker vai verificar se o container está saudável (ou seja, realmente pronto para uso).
+    healthcheck:
+    # test é o comando que será executado dentro do container para checar o estado.
+    # Aqui usamos pg_isready, uma ferramenta nativa do Postgres que responde se o servidor está aceitando conexões.
+    # -U postgres indica o usuário que será usado para testar a conexão.
+    # CMD-SHELL significa que o comando será rodado como se fosse no shell do container.
+      test: ["CMD-SHELL", "pg_isready -U postgres -d auth_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  flags-db:
+    image: postgres:15
+    container_name: flags-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: flags_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - flags_db_data:/var/lib/postgresql/data
+
+  targeting-db:
+    image: postgres:15
+    container_name: targeting-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: targeting_db
+    ports:
+      - "5434:5432"
+    volumes:
+      - targeting_db_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7
+    container_name: redis
+    ports:
+      - "6379:6379"
+
+  # =========================
+  # MICROSERVICES
+  # =========================
+
+
+    # lista dos containers que vão rodar nesse caso o que fiz no Dockerfile
+  auth-service:
+    # no caso ele vai na pasta do context e rodar o build do dockerfile
+    build:
+      context: ./auth-service
+    container_name: auth-service # ← nome do container
+    ports:
+      - "8001:8001"
+    environment: # variaveis de ambiente
+      PORT: "8001"
+      MASTER_KEY: "admin-secreto-123"
+      DATABASE_URL: "postgres://postgres:postgres@auth-db:5432/auth_db?sslmode=disable"
+    depends_on: # depende da checagem do banco primeiro antes de subir o serviço
+        auth-db:
+          condition: service_healthy
+
+  flag-service:
+    build:
+      context: ./flag-service
+    container_name: flag-service
+    ports:
+      - "8002:8002"
+    environment:
+      PORT: "8002"
+      AUTH_SERVICE_URL: "http://auth-service:8001"
+      DATABASE_URL: "postgres://postgres:postgres@flags-db:5432/flags_db?sslmode=disable"
+    depends_on: # depende da dos serviços abaixo antes de subir o serviço
+      - auth-service
+      - flags-db
+
+  targeting-service:
+    build:
+      context: ./targeting-service
+    container_name: targeting-service
+    ports:
+      - "8003:8003"
+    environment:
+      PORT: "8003"
+      AUTH_SERVICE_URL: "http://auth-service:8001"
+      DATABASE_URL: "postgres://postgres:postgres@targeting-db:5432/targeting_db?sslmode=disable"
+    depends_on:
+      - auth-service
+      - targeting-db
+
+  evaluation-service:
+    build:
+      context: ./evaluation-service
+    container_name: evaluation-service
+    ports:
+      - "8004:8004"
+    environment:
+      PORT: "8004"
+      REDIS_HOST: "redis"
+      REDIS_PORT: "6379"
+      REDIS_URL: "redis://redis:6379"
+      FLAG_SERVICE_URL: "http://flag-service:8002"
+      TARGETING_SERVICE_URL: "http://targeting-service:8003"
+      SERVICE_API_KEY: "SUA_API_KEY"
+      AWS_REGION: "us-east-2"
+      AWS_SQS_URL: "${AWS_SQS_URL}"
+      AWS_ACCESS_KEY_ID: "${AWS_ACCESS_KEY_ID}"
+      AWS_SECRET_ACCESS_KEY: "${AWS_SECRET_ACCESS_KEY}"
+    depends_on:
+      - redis
+      - flag-service
+      - targeting-service
+
+  analytics-service:
+    build:
+      context: ./analytics-service
+    container_name: analytics-service
+    ports:
+      - "8005:8005"
+    env_file:
+      - ./analytics-service/.env
+    depends_on:
+      - evaluation-service
+
+# Cada serviço de Postgres (auth-db, flags-db, targeting-db) monta um volume em /var/lib/postgresql/data.
+# Esse diretório é onde o Postgres guarda os dados (tabelas, registros, índices).
+volumes:
+  auth_db_data:
+  flags_db_data:
+  targeting_db_data:
