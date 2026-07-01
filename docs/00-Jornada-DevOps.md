@@ -11,3 +11,18 @@
 | 09    | Kubernetes         |    ⏳   |
 
 
+🔄 Kubernetes
+
+    ⏳ Namespace
+    ⏳ Deployment
+    ⏳ Service
+    ⏳ ConfigMap
+    ⏳ Secret
+    ⏳ Ingress
+    ⏳ HPA
+
+⏳ Aplicação funcionando
+
+⏳ Refatoração da documentação
+
+⏳ README profissional
