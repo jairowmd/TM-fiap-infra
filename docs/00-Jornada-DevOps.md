@@ -5,9 +5,9 @@
 | 03    | Amazon EKS         |    ✅   |
 | 04    | Amazon ECR         |    ✅   |
 | 05    | Amazon RDS         |    ✅   |
-| 06    | Amazon ElastiCache |    ⏳   |
-| 07    | Amazon DynamoDB    |    ⏳   |
-| 08    | Amazon SQS         |    ⏳   |
+| 06    | Amazon ElastiCache |    ✅   |
+| 07    | Amazon DynamoDB    |    ✅   |
+| 08    | Amazon SQS         |    ✅   |
 | 09    | Kubernetes         |    ⏳   |
 
 
